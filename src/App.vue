@@ -10,6 +10,12 @@
       <label for="tx-input">Transaction hash</label>
       <input id="tx-input" type="text" v-model="txHash">
     </div>
+    <div class="examples">
+      <h4>Examples</h4>
+      <div class="example" v-for="example in examples" @click="useExample(example.chainId, example.hash)">
+        {{ example.label }}
+      </div>
+    </div>
     <div>
       <button @click="inspect" :disabled="loading">Inspect</button>
     </div>
@@ -51,11 +57,33 @@
   </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { AlchemyProvider } from '@ethersproject/providers';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { Inspector } from 'mev-inspect';
+import { ChainId } from 'mev-inspect/lib/classifier';
 
+const examples = [{
+  label: 'Uniswap V2 X Uniswap V3 arbitrage',
+  hash: '0x88e99b372a7524a750bb846b91cd9433a22c7cce886edee4879b70cb47f0d0fe',
+  chainId: 1,
+}, {
+  label: 'Compound liquidation',
+  hash: '0xdf838db24228f280eba8a279266d1602b03b54507afdca3cb4b4ec640535642b',
+  chainId: 1,
+}, {
+  label: 'Aave V2 AMM market liquidation',
+  hash: '0x9529b0332f51d586a1d30f9106558daf3dbc66c6bbbd32935f19fbc2601b7aa1',
+  chainId: 1,
+}, {
+  label: 'Balancer V2 X Sushiswap arbitrage (Polygon)',
+  hash: '0xde56117bfdf9fe034b9e6bdebfc113df28ae93e8cd26c2be872f0c251c256aeb',
+  chainId: 137,
+}, {
+  label: 'Aave V3 liquidation (Arbitrum)',
+  hash: '0x0891c3846336c495821436adc35eda17bcd01588b1706d4bbb16f3eab59e3f82',
+  chainId: 42161,
+}];
 
 const chains = [{
   label: 'Ethereum',
@@ -68,13 +96,26 @@ const chains = [{
   value: 42161
 }];
 
-const chainId = ref(1);
+const chainId = ref<ChainId>(1);
 
 const txHash = ref('');
 
 const loading = ref(false);
 
 const mev = ref([]);
+
+watch(chainId, () => {
+  mev.value = [];
+});
+
+watch(txHash, () => {
+  mev.value = [];
+});
+
+function useExample(newChainId: number, hash: string) {
+  chainId.value = newChainId as ChainId;
+  txHash.value = hash;
+}
 
 async function inspect() {
   loading.value = true;
@@ -95,17 +136,33 @@ async function inspect() {
 }
 
 .page {
-  min-width: 600px;
-  max-width: 800px;
+  width: 600px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+}
+
+@media screen and (max-width: 768px) {
+  #app {
+    margin-top: initial;
+  }
+
+  .page {
+    width: 100%;
+    margin: 16px;
+  }
 }
 
 .chain,
 .tx {
   display: flex;
   gap: 8px;
+}
+
+.example {
+  font-size: 14px;
+  color: #6a40d5;
+  cursor: pointer;
 }
 
 .mevs {
